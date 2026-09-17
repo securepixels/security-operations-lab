@@ -202,9 +202,6 @@ This lab reinforces concepts from:
 - **CompTIA CySA+** — Security monitoring, threat detection, incident response
 - **CompTIA PenTest+** — Vulnerability assessment, attack simulation
 
-## Status
-
-🔧 **In Progress** — Building out initial VM deployments and documentation.
 
 ## License
 
