@@ -1,0 +1,45 @@
+profiles:
+  - name: pii-scan
+    description: Scan for personally identifiable information
+    patterns:
+      - name: SSN
+        regex: '\b\d{3}-\d{2}-\d{4}\b'
+        severity: critical
+      - name: Credit Card
+        regex: '\b(?:\d{4}[-\s]?){3}\d{4}\b'
+        severity: critical
+      - name: Email Address
+        regex: '\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+        severity: medium
+
+  - name: credential-scan
+    description: Scan for leaked credentials and API keys
+    patterns:
+      - name: AWS Access Key
+        regex: 'AKIA[0-9A-Z]{16}'
+        severity: critical
+      - name: Generic Password
+        regex: '(?i)(password|passwd|pwd)\s*[=:]\s*\S+'
+        severity: high
+      - name: Private Key Header
+        regex: '-----BEGIN (RSA |EC |DSA )?PRIVATE KEY-----'
+        severity: critical
+      - name: Generic API Key
+        regex: '(?i)(api[_-]?key|apikey)\s*[=:]\s*\S{16,}'
+        severity: high
+      - name: Generic Secret
+        regex: '(?i)(secret|token)\s*[=:]\s*\S{16,}'
+        severity: high
+
+  - name: compliance-scan
+    description: Scan for data subject to regulatory requirements
+    patterns:
+      - name: SSN
+        regex: '\b\d{3}-\d{2}-\d{4}\b'
+        severity: critical
+      - name: Date of Birth Pattern
+        regex: '\b(0[1-9]|1[0-2])/(0[1-9]|[12]\d|3[01])/(19|20)\d{2}\b'
+        severity: high
+      - name: Medical Record Number
+        regex: '(?i)MRN[\s:]*\d{6,10}'
+        severity: critical

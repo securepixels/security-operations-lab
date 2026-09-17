@@ -1,0 +1,141 @@
+<!--
+  Security Operations Lab — Custom Wazuh Detection Rules
+  
+  These rules supplement Wazuh's built-in ruleset with detection logic
+  for common attack techniques. Each rule maps to a MITRE ATT&CK technique
+  and includes a test procedure in the documentation (docs/06-detection-rules.md).
+  
+  Rule ID Range: 100001–100099 (reserved for this lab)
+  
+  Deploy to: /var/ossec/etc/rules/local_rules.xml on the Wazuh Manager
+-->
+
+<!-- ============================================================ -->
+<!-- USE CASE 1: SSH Brute Force Detection                         -->
+<!-- MITRE ATT&CK: T1110.001 (Brute Force: Password Guessing)     -->
+<!-- ============================================================ -->
+<group name="local,authentication,brute_force">
+  <rule id="100001" level="10" frequency="5" timeframe="120">
+    <if_matched_sid>5710</if_matched_sid>
+    <same_source_ip />
+    <description>SSH brute force detected: 5+ failed attempts from same source in 2 minutes</description>
+    <mitre>
+      <id>T1110.001</id>
+    </mitre>
+    <group>authentication_failures,brute_force</group>
+  </rule>
+</group>
+
+<!-- ============================================================ -->
+<!-- USE CASE 2: Suspicious PowerShell Execution                   -->
+<!-- MITRE ATT&CK: T1059.001 (PowerShell)                         -->
+<!-- ============================================================ -->
+<group name="local,windows,powershell">
+  <rule id="100010" level="12">
+    <if_sid>61600</if_sid>
+    <field name="win.eventdata.scriptBlockText">\.EncodedCommand|FromBase64String|Invoke-Expression|IEX\s*\(|downloadstring</field>
+    <description>Suspicious PowerShell: encoded command or download execution detected</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <group>powershell,suspicious_execution</group>
+  </rule>
+
+  <rule id="100011" level="10">
+    <if_sid>61600</if_sid>
+    <field name="win.eventdata.scriptBlockText">-ExecutionPolicy\s+Bypass|-ep\s+bypass</field>
+    <description>PowerShell execution policy bypass detected</description>
+    <mitre>
+      <id>T1059.001</id>
+    </mitre>
+    <group>powershell,policy_bypass</group>
+  </rule>
+</group>
+
+<!-- ============================================================ -->
+<!-- USE CASE 3: Privilege Escalation via sudo                     -->
+<!-- MITRE ATT&CK: T1548.003 (Sudo Abuse)                         -->
+<!-- ============================================================ -->
+<group name="local,linux,privilege_escalation">
+  <rule id="100020" level="8">
+    <if_sid>5401</if_sid>
+    <user negate="yes">labadmin|root</user>
+    <description>Sudo executed by non-standard user — possible privilege escalation</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,sudo</group>
+  </rule>
+
+  <rule id="100021" level="10">
+    <if_sid>5402</if_sid>
+    <match>COMMAND=/bin/bash|COMMAND=/bin/sh|COMMAND=/usr/bin/su</match>
+    <description>Sudo used to spawn root shell</description>
+    <mitre>
+      <id>T1548.003</id>
+    </mitre>
+    <group>privilege_escalation,root_shell</group>
+  </rule>
+</group>
+
+<!-- ============================================================ -->
+<!-- USE CASE 4: Account Creation                                  -->
+<!-- MITRE ATT&CK: T1136.001 (Create Local Account)               -->
+<!-- ============================================================ -->
+<group name="local,account_management">
+  <rule id="100030" level="8">
+    <if_sid>5902</if_sid>
+    <description>New local user account created on Linux endpoint</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <group>account_creation</group>
+  </rule>
+
+  <rule id="100031" level="8">
+    <if_sid>60106</if_sid>
+    <description>New local user account created on Windows endpoint</description>
+    <mitre>
+      <id>T1136.001</id>
+    </mitre>
+    <group>account_creation</group>
+  </rule>
+</group>
+
+<!-- ============================================================ -->
+<!-- USE CASE 5: File Integrity Monitoring — Critical Files         -->
+<!-- MITRE ATT&CK: T1565.001 (Stored Data Manipulation)           -->
+<!-- ============================================================ -->
+<group name="local,file_integrity">
+  <rule id="100040" level="12">
+    <if_sid>550</if_sid>
+    <match>/etc/passwd|/etc/shadow|/etc/sudoers</match>
+    <description>Critical system file modified — potential persistence or privilege escalation</description>
+    <mitre>
+      <id>T1565.001</id>
+    </mitre>
+    <group>fim,critical_file</group>
+  </rule>
+</group>
+
+<!-- ============================================================ -->
+<!-- USE CASE 6: DLP Scan Findings                                 -->
+<!-- Alerts when the data scanner detects sensitive data exposure   -->
+<!-- ============================================================ -->
+<group name="local,dlp">
+  <rule id="100050" level="10">
+    <decoded_as>json</decoded_as>
+    <field name="scan_type">data-discovery</field>
+    <field name="severity">critical</field>
+    <description>DLP scan detected critical sensitive data exposure</description>
+    <group>dlp,data_exposure</group>
+  </rule>
+
+  <rule id="100051" level="8">
+    <decoded_as>json</decoded_as>
+    <field name="scan_type">data-discovery</field>
+    <field name="severity">high</field>
+    <description>DLP scan detected high-severity sensitive data exposure</description>
+    <group>dlp,data_exposure</group>
+  </rule>
+</group>
